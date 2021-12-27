@@ -11,5 +11,6 @@ def get_pinned_message(update, context):
 
 
 chat = bot.get_chat(chat_id=-725032027, timeout=5)
-chat.unpin_all_messages()
+print(str(chat))
+
 # get_pinned_message_handler = MessageHandler()
