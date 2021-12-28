@@ -1,7 +1,5 @@
 from telegram.ext import Updater
 from config import TOKEN
-import threading
-from telegram.ext import CommandHandler, Filters, MessageHandler
 from func import new_member_welcome_message, start_command
 
 
