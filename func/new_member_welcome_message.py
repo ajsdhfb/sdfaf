@@ -15,6 +15,7 @@ def new_member(update, context):
         print("User Name: {} {}".format(first_name, last_name))
         chat = utils.get_chat(chat_id)
         print(chat)
+        print(type(chat))
     except Exception as e:
         print(e)
 
