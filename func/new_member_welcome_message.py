@@ -19,4 +19,4 @@ def new_member(update, context):
         print(e)
 
 
-get_new_member = MessageHandler(Filters.status_update.new_chat_members, new_member)
+send_pinned_message_handler = MessageHandler(Filters.status_update.new_chat_members, new_member)
