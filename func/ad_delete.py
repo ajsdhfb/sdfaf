@@ -20,6 +20,7 @@ def ad_delete_handler(update, context):
     lastname = user['last_name']
     name = ""
     if utils.is_admin_in_this_group(update, user_id, chat_id):
+        print("admin skip")
         return flag
     if username is not None:
         name = username
@@ -78,15 +79,18 @@ def add_ad_key(update, context):
     user_id = update.effective_user.id
     message_id = update.message.message_id
     user_message_content = update.message.text
+    chat_type = update.effective_chat.type
+    if chat_type == "private":
+        update.message.reply_text("此命令只有在群组中有效")
+        return
     if not utils.is_admin_in_this_group(update, user_id, chat_id):
         utils.send_message(chat_id, "非管理员，无权操作")
         return
     rst = re.search(r"\/add_ad_keyword\n([\w|\b|\\|\n]*)", user_message_content)
     if rst is None:
         utils.bot.send_message(
-            chat_id=chat_id,
-            text="指令错误，正确示例：\n`/add_ad_keyword\n违禁词`",
-            parse_mode="Markdown"
+            chat_id=user_id,
+            text="指令错误，正确示例：\n/add_ad_keyword\n违禁词",
         )
         return
     keyword = rst.group(1)
@@ -94,17 +98,15 @@ def add_ad_key(update, context):
     group_ad_keyword_set = conn.smembers("adKeywordSet:{}".format(chat_id))
     if group_ad_keyword_set is not None and keyword in group_ad_keyword_set:
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="此违禁词已存在\n您输入的违禁词为：{}".format(keyword),
-            parse_mode="Markdown"
         )
         return
     # print(group_keyword_set)
     conn.sadd("adKeywordSet:{}".format(chat_id), str(keyword))
     utils.bot.send_message(
-        chat_id=chat_id,
+        chat_id=user_id,
         text="添加成功\n违禁词：{}".format(keyword),
-        parse_mode="Markdown"
     )
 
 
@@ -114,14 +116,18 @@ def remove_ad_key(update, context):
     user_id = update.effective_user.id
     message_id = update.message.message_id
     user_message_content = update.message.text
+    chat_type = update.effective_chat.type
+    if chat_type == "private":
+        update.message.reply_text("此命令只有在群组中有效")
+        return
     if not utils.is_admin_in_this_group(update, user_id, chat_id):
         utils.send_message(chat_id, "非管理员，无权操作")
         return
     rst = re.search(r"\/remove_ad_keyword\n([\w|\b|\\|\n]*)", user_message_content)
     if rst is None:
         utils.bot.send_message(
-            chat_id=chat_id,
-            text="指令错误，正确示例：\n`/remove_ad_keyword\n需要移除的违禁词`",
+            chat_id=user_id,
+            text="指令错误，正确示例：\n/remove_ad_keyword\n需要移除的违禁词",
             parse_mode="Markdown"
         )
         return
@@ -130,23 +136,20 @@ def remove_ad_key(update, context):
     group_keyword_set = conn.smembers("adKeywordSet:{}".format(chat_id))
     if group_keyword_set is None:
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="不存在此违禁词\n您输入的违禁词为：{}".format(keyword),
-            parse_mode="Markdown"
         )
     # print(group_keyword_set)
     if keyword in group_keyword_set:
         conn.srem("adKeywordSet:{}".format(chat_id), str(keyword))
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="删除成功\n违禁词：{}".format(keyword),
-            parse_mode="Markdown"
         )
     else:
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="不存在此违禁词\n您输入的违禁词为：{}".format(keyword),
-            parse_mode="Markdown"
         )
 
 

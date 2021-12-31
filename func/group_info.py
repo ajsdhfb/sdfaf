@@ -8,13 +8,9 @@ import utils
 
 def info_exec(update, context):
     print("enter info_exec")
-
     chat_id = update.effective_message.chat_id
     message_id = update.message.message_id
     user_id = update.effective_user.id
-    if not utils.is_admin_in_this_group(update, user_id, chat_id):
-        utils.send_message(chat_id, "非管理员，无权操作")
-        return
     user = update.message.from_user
     username = user['username']
     firstname = user['first_name']
@@ -48,9 +44,14 @@ def info_exec(update, context):
 
 def group_info_command(update, context):
     chat_id = update.effective_message.chat_id
+    user_id = update.effective_user.id
+
     conn = redis_utils.get_connection()
     group_active_user_amount = conn.scard("activeUserSet:{}".format(chat_id))
     new_member_amount = conn.get("newMemberAmount:{}".format(chat_id))
+    if not utils.is_admin_in_this_group(update, user_id, chat_id):
+        utils.send_message(chat_id, "非管理员，无权操作")
+        return
     if new_member_amount is None:
         new_member_amount = 0
     group_message_amount = conn.get("groupMessageAmount:{}".format(chat_id))
@@ -65,23 +66,26 @@ def group_info_command(update, context):
         user_message_amount = conn.get("userMessageAmount:{}:{}".format(chat_id, user))
         active_user_message_amount_list.append([user, int(user_message_amount)])
     # print(active_user_message_amount_list)
-    most_activate_user_msg = ""
+    most_activate_user_msg = "最活跃用户：\n"
     if len(active_user_message_amount_list) > 0:
         sorted_list = sorted(active_user_message_amount_list, key=lambda user_info: user_info[1], reverse=True)
         # print(sorted_list)
-        most_activate_user = sorted_list[0]
-        user_meta_info = conn.hmget("userInfo:{}".format(most_activate_user[0]),
-                                    ["user_id", "username", "firstname", "lastname"])
-        print(user_meta_info)
-        firstname = user_meta_info[2]
-        lastname = user_meta_info[3]
-        name = ""
-        if firstname is not None:
-            name = name + firstname + " "
-        if lastname is not None:
-            name = name + lastname
-        most_activate_user_msg = "最活跃用户：[@{}](tg://user?id={})，发言数量 {}".format(
-            name, most_activate_user[0], most_activate_user[1])
+        print(sorted_list)
+        print(min(config.TOP_ACTIVE_USER_AMOUNT, len(sorted_list)))
+        for i in range(min(config.TOP_ACTIVE_USER_AMOUNT, len(sorted_list))):
+            user = sorted_list[i]
+            user_meta_info = conn.hmget("userInfo:{}".format(user[0]),
+                                        ["user_id", "username", "firstname", "lastname"])
+            print(user_meta_info)
+            firstname = user_meta_info[2]
+            lastname = user_meta_info[3]
+            name = ""
+            if firstname is not None:
+                name = name + firstname + " "
+            if lastname is not None:
+                name = name + lastname
+            most_activate_user_msg = most_activate_user_msg + "[@{}](tg://user?id={})，发言数量 {}\n".format(
+                name, user[0], user[1])
     msg = "群组当日信息一览：\n" \
           "活跃人数：{}\n" \
           "入群人数：{}\n" \

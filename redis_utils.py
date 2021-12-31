@@ -1,6 +1,7 @@
 import redis
+import config
 
-pool = redis.ConnectionPool(host='127.0.0.1', port=6379, encoding='utf8', decode_responses=True)
+pool = redis.ConnectionPool(host=config.REDIS_HOSTNAME, port=config.REDIS_PORT, encoding='utf8', decode_responses=True)
 
 
 def get_connection():
@@ -17,5 +18,3 @@ def get_key(key_name):
 
 def set_key_value(key, value):
     get_connection().set(key, value)
-
-

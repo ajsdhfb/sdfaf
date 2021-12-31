@@ -12,10 +12,13 @@ import utils
 
 def topic(update, context):
     print("enter topic")
-
     chat_id = update.effective_message.chat_id
     message_id = update.message.message_id
     user_id = update.effective_user.id
+    chat_type = update.effective_chat.type
+    if chat_type == "private":
+        update.message.reply_text("此命令只有在群组中有效")
+        return
     if not utils.is_admin_in_this_group(update, user_id, chat_id):
         utils.send_message(chat_id, "非管理员，无权操作")
         return
@@ -60,7 +63,7 @@ def topic(update, context):
     # print(hot_word_string)
     msg = "群组今日Top {}关键词为：\n\n".format(config.DISPLAY_KEYWORD_AMOUNT) + hot_word_string
     utils.bot.send_message(
-        chat_id=chat_id,
+        chat_id=user_id,
         text=msg,
         parse_mode="Markdown"
     )

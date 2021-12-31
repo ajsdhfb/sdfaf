@@ -37,17 +37,20 @@ def add_reply_key(update, context):
     user_id = update.effective_user.id
     message_id = update.message.message_id
     user_message_content = update.message.text
+    chat_type = update.effective_chat.type
+    if chat_type == "private":
+        update.message.reply_text("此命令只有在群组中有效")
+        return
     if not utils.is_admin_in_this_group(update, user_id, chat_id):
         utils.send_message(chat_id, "非管理员，无权操作")
         return
     rst = re.search(
-        r"\/add_reply_keyword\n---\n([\w|\\|\s|\d| |，|。|\！|\@|\#|\¥|\%]*?)\n---\n([\w|\d||\\|\n|\s| |，|。|\！|\@|\#|\¥|\%]*)",
+        r"\/add_reply_keyword\n---\n([\w|\\|\s|\d| |，|。|\！|\@|\#|\¥|\%|\:|\/|\.]*?)\n---\n([\w|\d||\\|\n|\s| |，|。|\！|\@|\#|\¥|\%|\/|\.|\:|\-]*)",
         user_message_content)
     if rst is None:
         utils.bot.send_message(
-            chat_id=chat_id,
-            text="指令错误，正确示例：\n`/add_reply_keyword\n---\n关键词\n---\n回复内容`",
-            parse_mode="Markdown"
+            chat_id=user_id,
+            text="指令错误，正确示例：\n/add_reply_keyword\n---\n关键词\n---\n回复内容",
         )
         return
     keyword = rst.group(1)
@@ -56,9 +59,8 @@ def add_reply_key(update, context):
     group_keyword_set = conn.smembers("keywordReplySet:{}".format(chat_id))
     if group_keyword_set is not None and keyword in group_keyword_set:
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="此关键词已存在\n您输入的关键词为：{}\n回复内容已经更新为：\n{}".format(keyword, answer),
-            parse_mode="Markdown"
         )
         redis_utils.set_key_value("keywordReplyContent:{}:{}".format(chat_id, str(keyword)), str(answer))
         return
@@ -67,9 +69,8 @@ def add_reply_key(update, context):
     conn.sadd("keywordReplySet:{}".format(chat_id), str(keyword))
     redis_utils.set_key_value("keywordReplyContent:{}:{}".format(chat_id, str(keyword)), str(answer))
     utils.bot.send_message(
-        chat_id=chat_id,
+        chat_id=user_id,
         text="添加成功\n关键词：{}\n回复：\n{}".format(keyword, answer),
-        parse_mode="Markdown"
     )
 
 
@@ -79,15 +80,18 @@ def remove_reply_key(update, context):
     user_id = update.effective_user.id
     message_id = update.message.message_id
     user_message_content = update.message.text
+    chat_type = update.effective_chat.type
+    if chat_type == "private":
+        update.message.reply_text("此命令只有在群组中有效")
+        return
     if not utils.is_admin_in_this_group(update, user_id, chat_id):
         utils.send_message(chat_id, "非管理员，无权操作")
         return
     rst = re.search(r"\/remove_reply_keyword\n([\w|\s|\\]*)", user_message_content)
     if rst is None:
         utils.bot.send_message(
-            chat_id=chat_id,
-            text="指令错误，正确示例：\n`/remove_reply_keyword\n关键词`",
-            parse_mode="Markdown"
+            chat_id=user_id,
+            text="指令错误，正确示例：\n/remove_reply_keyword\n关键词",
         )
         return
     keyword = rst.group(1)
@@ -95,24 +99,21 @@ def remove_reply_key(update, context):
     group_keyword_set = conn.smembers("keywordReplySet:{}".format(chat_id))
     if group_keyword_set is None:
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="不存在此关键词\n您输入的关键词为：{}".format(keyword),
-            parse_mode="Markdown"
         )
     # print(group_keyword_set)
     if keyword in group_keyword_set:
         conn.srem("keywordReplySet:{}".format(chat_id), str(keyword))
         conn.delete("keywordReplyContent:{}:{}".format(chat_id, str(keyword)))
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="删除成功\n关键词：{}".format(keyword),
-            parse_mode="Markdown"
         )
     else:
         utils.bot.send_message(
-            chat_id=chat_id,
+            chat_id=user_id,
             text="不存在此关键词\n您输入的关键词为：{}".format(keyword),
-            parse_mode="Markdown"
         )
 
 
